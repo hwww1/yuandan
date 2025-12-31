@@ -35,11 +35,16 @@
             from { opacity: 0; transform: scale(0.9); }
             to { opacity: 1; transform: scale(1); }
         }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
         
         .font-cursive { font-family: 'Ma Shan Zheng', cursive; }
         .animate-heartbeat { animation: heartbeat 2s infinite ease-in-out; }
         .animate-float { animation: float 3s infinite ease-in-out; }
         .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
 
         /* 隐藏滚动条 */
         ::-webkit-scrollbar { display: none; }
@@ -82,15 +87,17 @@
 </head>
 <body class="bg-black text-white h-screen w-screen relative">
 
-    <!-- 背景音乐 -->
-    <audio id="bg-music" loop>
-        <source src="https://cdn.pixabay.com/audio/2023/01/01/00/03/chinese-new-year-128212.mp3" type="audio/mpeg">
+    <!-- 背景音乐：换了一个更稳定、加载更快的春节喜庆音乐源 -->
+    <audio id="bg-music" loop preload="auto">
+        <source src="https://music.163.com/song/media/outer/url?id=1336856426.mp3" type="audio/mpeg">
     </audio>
 
     <!-- 音乐开关按钮 -->
-    <button id="music-btn" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg animate-pulse" onclick="toggleMusic()">
-        <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-        <svg id="music-icon-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+    <button id="music-btn" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg" onclick="toggleMusic(event)">
+        <div id="music-icon-wrapper">
+            <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle><line x1="2" y1="2" x2="22" y2="22"></line></svg>
+            <svg id="music-icon-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        </div>
     </button>
 
     <!-- 烟花画布 -->
@@ -165,7 +172,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
                         <span class="text-sm font-bold">再抽一次</span>
                     </button>
-                    <!-- 分享按钮只是提示，因为H5直接分享比较受限 -->
+                    <!-- 分享按钮 -->
                     <button onclick="share()" class="flex items-center gap-2 px-6 py-3 rounded-full bg-[#d95940] hover:bg-[#c04830] text-white shadow-lg shadow-red-900/50 transition-all active:scale-95 border border-white/10">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                         <span class="text-sm font-bold">送给朋友</span>
@@ -202,28 +209,58 @@
             "https://images.unsplash.com/photo-1514300451569-83952d7e008a?q=80&w=1000&auto=format&fit=crop"
         ];
 
-        // --- 逻辑控制 ---
+        // --- 核心变量 ---
         const envelopeScreen = document.getElementById('screen-envelope');
         const resultScreen = document.getElementById('screen-result');
         const greetingText = document.getElementById('greeting-text');
         const resultBg = document.getElementById('result-bg');
         const dateEl = document.getElementById('current-date');
-        
+        const audio = document.getElementById('bg-music');
         let isOpened = false;
 
         // 初始化日期
         dateEl.innerText = new Date().toLocaleDateString('zh-CN');
 
+        // --- 音乐自动播放 Hack (核心修复) ---
+        // 1. 尝试在微信环境中自动播放
+        document.addEventListener('WeixinJSBridgeReady', function() {
+            tryPlayMusic();
+        }, false);
+
+        // 2. 尝试在用户第一次点击页面任何地方时播放（解决iOS Safari限制）
+        function unlockAudio() {
+            tryPlayMusic();
+            // 成功触发后移除监听，避免重复调用
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        }
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        // 尝试播放音乐的封装函数
+        function tryPlayMusic() {
+            if (audio.paused) {
+                audio.volume = 0.4;
+                var promise = audio.play();
+                if (promise !== undefined) {
+                    promise.then(_ => {
+                        updateMusicIcon(true);
+                    }).catch(error => {
+                        console.log("Autoplay prevented by browser policy", error);
+                    });
+                }
+            }
+        }
+
+        // --- 业务逻辑 ---
         function getRandom(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
         function updateContent() {
-            // 随机文本
             const text = getRandom(GREETINGS);
-            greetingText.innerHTML = text.replace(/\n/g, '<br/>'); // 换行处理
+            greetingText.innerHTML = text.replace(/\n/g, '<br/>');
             
-            // 随机图片
             const img = getRandom(IMAGES);
             resultBg.style.opacity = '0';
             setTimeout(() => {
@@ -234,36 +271,27 @@
             }, 300);
         }
 
-        // 打开红包
         function openEnvelope() {
             if (isOpened) return;
             isOpened = true;
             
-            // 尝试播放音乐（如果用户还没点击过音乐按钮）
-            const audio = document.getElementById('bg-music');
-            audio.volume = 0.3;
-            audio.play().catch(() => console.log('Autoplay prevented'));
-            updateMusicIcon(true);
+            // 再次尝试强制播放音乐
+            tryPlayMusic();
 
-            // 更新内容
             updateContent();
 
-            // 切换屏幕动画
             envelopeScreen.style.transform = 'scale(1.5)';
             envelopeScreen.style.opacity = '0';
             
             setTimeout(() => {
                 envelopeScreen.classList.add('hidden-screen');
                 resultScreen.classList.remove('hidden-screen');
-                
-                // 触发很多烟花
                 for(let i=0; i<5; i++) {
                     setTimeout(() => createRandomFirework(), i * 300);
                 }
             }, 600);
         }
 
-        // 再抽一次
         function regenerate() {
             greetingText.style.opacity = '0';
             setTimeout(() => {
@@ -273,7 +301,6 @@
             }, 300);
         }
 
-        // 分享逻辑
         function share() {
             const url = window.location.href;
             const text = `送你一张2025新年好运签：\n\n${greetingText.innerText}\n\n👇点击领取你的专属祝福：${url}`;
@@ -289,10 +316,11 @@
             }
         }
 
-        // --- 音乐控制 ---
-        let isMusicPlaying = false;
-        function toggleMusic() {
-            const audio = document.getElementById('bg-music');
+        // --- 音乐控制手动开关 ---
+        function toggleMusic(e) {
+            // 阻止冒泡，防止触发全局的 unlockAudio
+            if(e) e.stopPropagation(); 
+            
             if (audio.paused) {
                 audio.play();
                 updateMusicIcon(true);
@@ -303,15 +331,18 @@
         }
 
         function updateMusicIcon(playing) {
-            isMusicPlaying = playing;
+            const wrapper = document.getElementById('music-icon-wrapper');
             const onIcon = document.getElementById('music-icon-on');
             const offIcon = document.getElementById('music-icon-off');
+            
             if (playing) {
                 onIcon.classList.remove('hidden');
                 offIcon.classList.add('hidden');
+                wrapper.classList.add('animate-spin-slow'); // 播放时旋转图标
             } else {
                 onIcon.classList.add('hidden');
                 offIcon.classList.remove('hidden');
+                wrapper.classList.remove('animate-spin-slow');
             }
         }
 
@@ -345,7 +376,7 @@
                 this.y += this.vy;
                 this.vx *= 0.95;
                 this.vy *= 0.95;
-                this.vy += 0.04; // gravity
+                this.vy += 0.04; 
                 this.life -= this.decay;
             }
             draw(ctx) {
@@ -385,16 +416,12 @@
             requestAnimationFrame(animateFireworks);
         }
         
-        // 启动烟花循环
         animateFireworks();
-        // 偶尔自动放一个
         setInterval(() => {
             if (Math.random() < 0.3) createRandomFirework();
         }, 1500);
 
-        // 点击放烟花
         window.addEventListener('click', (e) => {
-            // 如果点在按钮上就不放
             if (e.target.closest('button') || e.target.closest('.relative')) return;
             createFirework(e.clientX, e.clientY);
         });
