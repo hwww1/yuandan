@@ -1,49 +1,403 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2025 新年好运签</title>
-    
-    <!-- Social Share Meta Tags (Open Graph) -->
     <meta property="og:title" content="2025 新年好运签" />
-    <meta property="og:description" content="点开抽取你的专属新年祝福，接收一整年的好运！" />
-    <meta property="og:image" content="https://images.unsplash.com/photo-1548504778-2c97693e506e?q=80&w=1000&auto=format&fit=crop" />
-    <meta property="og:type" content="website" />
-
+    <meta property="og:description" content="点击抽取你的专属新年祝福，接收一整年的好运！" />
+    
+    <!-- 引入 Tailwind CSS (样式库) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: #000;
-        overflow: hidden;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .font-serif-sc {
-        font-family: 'Noto Serif SC', serif;
-      }
-      .font-cursive {
-        font-family: 'Ma Shan Zheng', cursive;
-      }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Noto Serif SC', serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* 动画定义 */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .font-cursive { font-family: 'Ma Shan Zheng', cursive; }
+        .animate-heartbeat { animation: heartbeat 2s infinite ease-in-out; }
+        .animate-float { animation: float 3s infinite ease-in-out; }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { display: none; }
+        
+        /* 玻璃拟态效果 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* 页面切换过渡 */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .hidden-screen {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.1);
+            z-index: -1;
+        }
     </style>
 <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
     "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "vite": "https://esm.sh/vite@^7.3.0"
   }
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body class="bg-black text-white h-screen w-screen relative">
+
+    <!-- 背景音乐 -->
+    <audio id="bg-music" loop>
+        <source src="https://cdn.pixabay.com/audio/2023/01/01/00/03/chinese-new-year-128212.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 音乐开关按钮 -->
+    <button id="music-btn" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg animate-pulse" onclick="toggleMusic()">
+        <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        <svg id="music-icon-on" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+    </button>
+
+    <!-- 烟花画布 -->
+    <canvas id="fireworks" class="fixed inset-0 pointer-events-none z-0 mix-blend-screen"></canvas>
+
+    <!-- 背景层 -->
+    <div class="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#2a0808_0%,_#000000_100%)] z-[-1]"></div>
+
+    <!-- 屏幕1：红包封面 -->
+    <div id="screen-envelope" class="screen z-20">
+        <div class="relative w-[85%] max-w-[320px] aspect-[3/4.5] rounded-xl shadow-2xl animate-float cursor-pointer" onclick="openEnvelope()">
+            <!-- 红包主体 -->
+            <div class="absolute inset-0 bg-[#cf3c32] rounded-xl overflow-hidden border border-[#d95940]">
+                <!-- 顶部弧形 -->
+                <div class="absolute top-0 left-0 right-0 h-[65%] bg-[#d95940] rounded-b-[50%] shadow-lg flex flex-col items-center pt-12 z-10">
+                    <div class="w-14 h-14 bg-[#ebcd98] rounded-full flex items-center justify-center mb-4 shadow-inner">
+                        <span class="text-[#d95940] font-bold text-2xl font-serif">福</span>
+                    </div>
+                    <h2 class="text-[#ebcd98] text-xl tracking-widest font-medium">2025·乙巳蛇年</h2>
+                    <p class="text-[#ebcd98]/80 text-sm mt-2">点击开启好运</p>
+                </div>
+                
+                <!-- 开字按钮 -->
+                <div class="absolute top-[65%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                    <div class="w-24 h-24 rounded-full bg-[#ebcd98] shadow-[0_4px_14px_rgba(0,0,0,0.3)] flex items-center justify-center border-[4px] border-[#ebcd98] transition-transform active:scale-95">
+                         <div class="w-20 h-20 rounded-full border border-[#d95940]/20 flex items-center justify-center">
+                            <span class="text-[#333] font-serif font-bold text-4xl select-none">开</span>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- 底部祝福 -->
+                <div class="absolute bottom-8 w-full text-center z-0">
+                    <p class="text-[#ebcd98]/40 text-xs tracking-[0.5em]">大吉大利</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 屏幕2：好运签结果 -->
+    <div id="screen-result" class="screen hidden-screen z-10">
+        <div class="w-full h-full md:max-w-[400px] md:h-[90vh] relative md:rounded-3xl overflow-hidden shadow-2xl bg-black">
+            <!-- 结果背景图 -->
+            <img id="result-bg" src="" class="absolute inset-0 w-full h-full object-cover opacity-80 transition-opacity duration-1000">
+            <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90"></div>
+            
+            <!-- 内容区域 -->
+            <div class="absolute inset-0 z-10 flex flex-col justify-between p-8 pb-12 animate-fade-in">
+                <!-- 顶部日期 -->
+                <div class="flex justify-between items-center mt-4 opacity-80">
+                    <div class="flex items-center gap-2">
+                        <span class="text-yellow-200 text-lg">✨</span>
+                        <span class="text-xs text-yellow-100 tracking-[0.2em] font-light uppercase">LUCKY 2025</span>
+                    </div>
+                    <div class="text-xs text-white/60 font-serif" id="current-date"></div>
+                </div>
+
+                <!-- 核心文案 -->
+                <div class="flex-1 flex items-center justify-center">
+                    <div class="text-center relative py-10 px-6 glass-panel rounded-2xl shadow-xl w-full">
+                        <span class="absolute top-4 left-4 text-4xl text-white/30 font-serif leading-none">“</span>
+                        <div id="greeting-text" class="text-xl md:text-2xl font-serif text-white/95 leading-loose tracking-wide drop-shadow-md min-h-[100px] flex flex-col justify-center">
+                            <!-- JS 填充内容 -->
+                        </div>
+                        <span class="absolute bottom-[-10px] right-4 text-4xl text-white/30 font-serif leading-none rotate-180">“</span>
+                    </div>
+                </div>
+
+                <!-- 底部按钮 -->
+                <div class="flex justify-center gap-4 mb-safe">
+                    <button onclick="regenerate()" class="flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
+                        <span class="text-sm font-bold">再抽一次</span>
+                    </button>
+                    <!-- 分享按钮只是提示，因为H5直接分享比较受限 -->
+                    <button onclick="share()" class="flex items-center gap-2 px-6 py-3 rounded-full bg-[#d95940] hover:bg-[#c04830] text-white shadow-lg shadow-red-900/50 transition-all active:scale-95 border border-white/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        <span class="text-sm font-bold">送给朋友</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 数据配置 ---
+        const GREETINGS = [
+            "2025，\n允许一切发生，\n做自己的光，\n不慌不忙，闪闪发亮。",
+            "岁岁常欢愉，\n万事皆胜意。\n新的一年，\n烟火向星辰，所愿皆成真。",
+            "与其向往，\n不如出发。\n2025，\n行而不辍，未来可期。",
+            "保持热爱，\n奔赴山海。\n愿你的2025，\n即使单枪匹马，亦能勇敢无畏。",
+            "凡是过往，\n皆为序章。\n所有美好，\n都在2025如约而至。",
+            "祝你：\n口袋有钱，\n手中有书，\n眼里有光，\n心中有爱。",
+            "2025，\n没有不可治愈的伤痛，\n没有不能结束的沉沦，\n所有失去的，\n都会以另一种方式归来。",
+            "愿今年所有的遗憾，\n都是明年惊喜的铺垫。\n2025，\n诸事顺遂。",
+            "这一年，\n仅祝你：\n自由，迷人，\n且富有。",
+            "去爱，去生活，\n去受伤，去治愈。\n2025，\n听从内心的声音。",
+            "即使世界偶尔薄凉，\n内心也要繁花似锦。\n2025，\n浅浅喜，静静爱。",
+            "我在2024的尽头，\n祝你在2025的开头：\n平安喜乐，\n万事顺意。"
+        ];
+
+        const IMAGES = [
+            "https://images.unsplash.com/photo-1548504778-2c97693e506e?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1516075677024-e7c62bf654f5?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1496337589254-7e19d01cec44?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1514424365990-edd907309995?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1548123378-bde4eca81d2d?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1514300451569-83952d7e008a?q=80&w=1000&auto=format&fit=crop"
+        ];
+
+        // --- 逻辑控制 ---
+        const envelopeScreen = document.getElementById('screen-envelope');
+        const resultScreen = document.getElementById('screen-result');
+        const greetingText = document.getElementById('greeting-text');
+        const resultBg = document.getElementById('result-bg');
+        const dateEl = document.getElementById('current-date');
+        
+        let isOpened = false;
+
+        // 初始化日期
+        dateEl.innerText = new Date().toLocaleDateString('zh-CN');
+
+        function getRandom(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function updateContent() {
+            // 随机文本
+            const text = getRandom(GREETINGS);
+            greetingText.innerHTML = text.replace(/\n/g, '<br/>'); // 换行处理
+            
+            // 随机图片
+            const img = getRandom(IMAGES);
+            resultBg.style.opacity = '0';
+            setTimeout(() => {
+                resultBg.src = img;
+                resultBg.onload = () => {
+                    resultBg.style.opacity = '0.8';
+                }
+            }, 300);
+        }
+
+        // 打开红包
+        function openEnvelope() {
+            if (isOpened) return;
+            isOpened = true;
+            
+            // 尝试播放音乐（如果用户还没点击过音乐按钮）
+            const audio = document.getElementById('bg-music');
+            audio.volume = 0.3;
+            audio.play().catch(() => console.log('Autoplay prevented'));
+            updateMusicIcon(true);
+
+            // 更新内容
+            updateContent();
+
+            // 切换屏幕动画
+            envelopeScreen.style.transform = 'scale(1.5)';
+            envelopeScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                envelopeScreen.classList.add('hidden-screen');
+                resultScreen.classList.remove('hidden-screen');
+                
+                // 触发很多烟花
+                for(let i=0; i<5; i++) {
+                    setTimeout(() => createRandomFirework(), i * 300);
+                }
+            }, 600);
+        }
+
+        // 再抽一次
+        function regenerate() {
+            greetingText.style.opacity = '0';
+            setTimeout(() => {
+                updateContent();
+                greetingText.style.opacity = '1';
+                createRandomFirework();
+            }, 300);
+        }
+
+        // 分享逻辑
+        function share() {
+            const url = window.location.href;
+            const text = `送你一张2025新年好运签：\n\n${greetingText.innerText}\n\n👇点击领取你的专属祝福：${url}`;
+            
+            if (navigator.share) {
+                navigator.share({ title: '2025新年好运签', text: text, url: url }).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('链接和祝福已复制！快去发给朋友吧~');
+                }).catch(() => {
+                    alert('请复制浏览器上方链接分享给朋友哦');
+                });
+            }
+        }
+
+        // --- 音乐控制 ---
+        let isMusicPlaying = false;
+        function toggleMusic() {
+            const audio = document.getElementById('bg-music');
+            if (audio.paused) {
+                audio.play();
+                updateMusicIcon(true);
+            } else {
+                audio.pause();
+                updateMusicIcon(false);
+            }
+        }
+
+        function updateMusicIcon(playing) {
+            isMusicPlaying = playing;
+            const onIcon = document.getElementById('music-icon-on');
+            const offIcon = document.getElementById('music-icon-off');
+            if (playing) {
+                onIcon.classList.remove('hidden');
+                offIcon.classList.add('hidden');
+            } else {
+                onIcon.classList.add('hidden');
+                offIcon.classList.remove('hidden');
+            }
+        }
+
+        // --- 烟花效果 (Canvas) ---
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 100;
+                this.color = color;
+                this.size = Math.random() * 2 + 1;
+                this.decay = Math.random() * 1.5 + 0.5;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.vy += 0.04; // gravity
+                this.life -= this.decay;
+            }
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = Math.max(this.life / 100, 0);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function createFirework(x, y) {
+            const colors = ['#FFD700', '#FFA500', '#FF4500', '#E6E6FA', '#FFF']; 
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function createRandomFirework() {
+            createFirework(
+                Math.random() * canvas.width, 
+                Math.random() * canvas.height * 0.6
+            );
+        }
+
+        function animateFireworks() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(ctx);
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(animateFireworks);
+        }
+        
+        // 启动烟花循环
+        animateFireworks();
+        // 偶尔自动放一个
+        setInterval(() => {
+            if (Math.random() < 0.3) createRandomFirework();
+        }, 1500);
+
+        // 点击放烟花
+        window.addEventListener('click', (e) => {
+            // 如果点在按钮上就不放
+            if (e.target.closest('button') || e.target.closest('.relative')) return;
+            createFirework(e.clientX, e.clientY);
+        });
+    </script>
+</body>
 </html>
