@@ -108,7 +108,7 @@ const GreetingCard: React.FC<GreetingCardProps> = ({ message, image, onRegenerat
              <div className="flex justify-center gap-4">
                 <ActionButton 
                   icon={<RefreshCw size={18} />} 
-                  label="换一句" 
+                  label="再抽一签" 
                   onClick={onRegenerate} 
                   loading={loading}
                 />
@@ -118,7 +118,6 @@ const GreetingCard: React.FC<GreetingCardProps> = ({ message, image, onRegenerat
                   onClick={handleShare} 
                 />
              </div>
-             {/* Watermark removed as requested */}
           </div>
         </div>
       </div>

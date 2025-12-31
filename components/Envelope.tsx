@@ -25,11 +25,11 @@ const Envelope: React.FC<EnvelopeProps> = ({ onOpen, loading }) => {
               <span className="text-[#d95940] font-bold text-lg">福</span>
            </div>
            
-           <h2 className="text-[#ebcd98] text-xl font-medium tracking-wide">Gemini AI</h2>
-           <p className="text-[#ebcd98]/80 text-sm mt-1">发来一个红包</p>
+           <h2 className="text-[#ebcd98] text-xl font-medium tracking-wide">2025·乙巳蛇年</h2>
+           <p className="text-[#ebcd98]/80 text-sm mt-1">抽取你的新年好运签</p>
            
            <div className="mt-6">
-             <h1 className="text-[#ebcd98] text-2xl font-bold tracking-widest">2025 新年快乐</h1>
+             <h1 className="text-[#ebcd98] text-2xl font-bold tracking-widest">新年快乐</h1>
            </div>
         </div>
 
@@ -52,7 +52,7 @@ const Envelope: React.FC<EnvelopeProps> = ({ onOpen, loading }) => {
 
         {/* Bottom Area Decoration */}
         <div className="absolute bottom-8 w-full text-center z-0">
-           <p className="text-[#ebcd98]/40 text-xs">Gemini 智能生成 · 专属祝福</p>
+           <p className="text-[#ebcd98]/40 text-xs">大吉大利 · 万事顺遂</p>
         </div>
 
       </motion.div>
